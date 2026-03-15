@@ -1,0 +1,12 @@
+# Deploy this to every namespace via Kustomize to establish a default-deny baseline.
+# Per-app NetworkPolicy resources with more specific selectors will override this
+# for the traffic they explicitly allow.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress

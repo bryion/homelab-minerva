@@ -1,0 +1,92 @@
+version: "3"
+
+vars:
+  CLUSTER_NAME: homelab
+  TALOS_NODE: 192.168.1.X  # Replace with node IP
+  GITHUB_OWNER: ""          # Replace with GitHub org/user
+  GITHUB_REPO: homelab
+
+tasks:
+  # --- Talos ---
+  talos:gen:
+    desc: Generate Talos machine configs
+    cmds:
+      - >
+        talosctl gen config {{.CLUSTER_NAME}}
+        https://{{.TALOS_NODE}}:6443
+        --output-dir talos/clusterconfig
+        --with-docs=false
+        --with-examples=false
+
+  talos:apply:
+    desc: Apply Talos config to the node
+    cmds:
+      - >
+        talosctl apply-config
+        --talosconfig talos/clusterconfig/talosconfig
+        --nodes {{.TALOS_NODE}}
+        --file talos/clusterconfig/controlplane.yaml
+
+  # --- Flux ---
+  flux:bootstrap:
+    desc: Bootstrap Flux on the cluster
+    cmds:
+      - >
+        flux bootstrap github
+        --owner={{.GITHUB_OWNER}}
+        --repository={{.GITHUB_REPO}}
+        --branch=main
+        --path=kubernetes
+        --personal
+
+  flux:reconcile:
+    desc: Force Flux reconciliation
+    cmds:
+      - flux reconcile source git flux-system
+      - flux reconcile kustomization flux-system
+
+  # --- SOPS ---
+  sops:age-keygen:
+    desc: Generate a new age key pair
+    cmds:
+      - age-keygen -o age.agekey
+      - echo "Public key above — add it to .sops.yaml"
+      - echo "Move age.agekey to a secure location and set SOPS_AGE_KEY_FILE"
+
+  sops:encrypt:
+    desc: Encrypt a file in place with SOPS
+    cmds:
+      - sops --encrypt --in-place {{.CLI_ARGS}}
+
+  # --- Kubernetes ---
+  k:ns:
+    desc: List all namespaces
+    cmds:
+      - kubectl get namespaces
+
+  # --- Validation ---
+  validate:yaml:
+    desc: Lint all YAML files
+    cmds:
+      - yamllint -c .yamllint.yml . || yamllint .
+
+  validate:k8s:
+    desc: Validate Kubernetes manifests
+    cmds:
+      - >
+        kubeconform -summary -strict
+        -ignore-missing-schemas
+        -skip kubernetes/flux-system/
+        kubernetes/
+
+  # --- Velero ---
+  velero:backup:
+    desc: Trigger a manual Velero backup
+    cmds:
+      - velero backup create manual-{{now | date "20060102-150405"}} --wait
+
+  velero:restore:
+    desc: List available Velero restores
+    cmds:
+      - velero backup get
+      - velero restore get

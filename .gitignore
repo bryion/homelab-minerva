@@ -1,0 +1,22 @@
+# Talos generated configs
+talos/clusterconfig/
+
+# SOPS decrypted files
+*.dec
+*.sops.yaml.dec
+
+# Terraform
+.terraform/
+terraform.tfstate
+terraform.tfstate.backup
+*.tfplan
+
+# Environment
+.env
+
+# Kubernetes credentials
+kubeconfig
+talosconfig
+
+# Node
+node_modules/

@@ -1,0 +1,58 @@
+---
+- name: Bootstrap Talos Linux node
+  hosts: talos
+  gather_facts: false
+  vars:
+    talos_version: "v1.9.0"
+    kubernetes_version: "v1.32.0"
+    cluster_name: homelab
+    cluster_endpoint: "https://{{ talos_endpoint }}:6443"
+
+  tasks:
+    - name: Generate Talos machine configs
+      delegate_to: localhost
+      ansible.builtin.command:
+        cmd: >
+          talosctl gen config {{ cluster_name }} {{ cluster_endpoint }}
+          --output-dir ../talos/clusterconfig
+          --with-docs=false
+          --with-examples=false
+      args:
+        creates: ../talos/clusterconfig/controlplane.yaml
+
+    - name: Apply control plane config
+      delegate_to: localhost
+      ansible.builtin.command:
+        cmd: >
+          talosctl apply-config
+          --insecure
+          --nodes {{ talos_endpoint }}
+          --file ../talos/clusterconfig/controlplane.yaml
+
+    - name: Wait for Talos API to be ready
+      delegate_to: localhost
+      ansible.builtin.command:
+        cmd: >
+          talosctl --talosconfig ../talos/clusterconfig/talosconfig
+          --nodes {{ talos_endpoint }}
+          health
+      retries: 30
+      delay: 10
+      register: health_check
+      until: health_check.rc == 0
+
+    - name: Bootstrap etcd
+      delegate_to: localhost
+      ansible.builtin.command:
+        cmd: >
+          talosctl --talosconfig ../talos/clusterconfig/talosconfig
+          --nodes {{ talos_endpoint }}
+          bootstrap
+
+    - name: Retrieve kubeconfig
+      delegate_to: localhost
+      ansible.builtin.command:
+        cmd: >
+          talosctl --talosconfig ../talos/clusterconfig/talosconfig
+          --nodes {{ talos_endpoint }}
+          kubeconfig ./kubeconfig

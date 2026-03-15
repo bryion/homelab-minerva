@@ -1,0 +1,46 @@
+name: Validate
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Lint YAML
+        uses: ibiqlik/action-yamllint@v3
+        with:
+          file_or_dir: .
+          config_data: |
+            extends: default
+            rules:
+              line-length:
+                max: 150
+              truthy:
+                check-keys: false
+
+      - name: Validate Kubernetes manifests
+        uses: docker://ghcr.io/yannh/kubeconform:latest
+        with:
+          args: >-
+            -summary
+            -strict
+            -ignore-missing-schemas
+            -skip kubernetes/flux-system/
+            kubernetes/
+
+      - name: Check for unencrypted secrets
+        run: |
+          if grep -r "kind: Secret" --include="*.yaml" --include="*.yml" kubernetes/ \
+            | grep -v ".sops.yaml" \
+            | grep -v "kustomization" \
+            | grep -v "^#"; then
+            echo "ERROR: Found unencrypted Secret manifests. Use SOPS to encrypt them."
+            exit 1
+          fi
+
+      - name: Run pre-commit hooks
+        uses: pre-commit/action@v3.0.1
