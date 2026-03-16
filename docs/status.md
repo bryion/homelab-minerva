@@ -1,0 +1,73 @@
+# Project Status: homelab-minerva
+
+**Date:** 2026-03-15
+**Current Phase:** Phase 0 (Complete)
+
+## Phase 0 Checklist
+
+- [x] All CLI tools installed (talosctl 1.12.5, kubectl 1.35.2, flux 2.8.2, sops 3.12.1, age 1.3.1, task 3.49.1, pre-commit 4.5.1, kubeconform 0.7.0, ansible 2.15.13, yamllint 1.37.1, gh 2.88.1)
+- [x] Age keypair generated (`~/.config/sops/age/keys.txt` exists, `SOPS_AGE_KEY_FILE` set in `~/.zshrc`)
+- [x] SOPS encrypt/decrypt roundtrip works
+- [x] Pre-commit hooks installed and passing (trim whitespace, fix EOL, check yaml, detect secrets)
+- [x] Commitlint configured and blocking bad messages (`commitlint.config.js` extends `@commitlint/config-conventional`, commit-msg hook installed)
+- [x] Repo structure matches scaffold (all 23 expected files/directories present)
+- [x] Git remote connected to GitHub (`bryion/homelab-minerva`)
+- [x] CI lint workflow exists (`.github/workflows/lint.yml` runs on PRs to main)
+- [x] Taskfile with all commands (11 tasks: flux, sops, talos, validate, velero)
+
+## Architecture Overview
+
+Single-node Kubernetes cluster running Talos Linux on bare metal, managed via Flux CD GitOps. External access is provided through Cloudflare tunnels (cloudflared) without exposing ports. Security follows a defense-in-depth model with default-deny network policies, Kyverno admission policies, SOPS-encrypted secrets, and Trivy image scanning. Monitoring uses the Prometheus/Grafana/Loki stack, with Velero handling disaster recovery backups.
+
+## Phase Plan
+
+| Phase | Description | Status |
+|-------|-------------|--------|
+| 0 | Workstation setup | COMPLETE |
+| 1 | Talos on bare metal | NOT STARTED |
+| 2 | Flux bootstrap + GitOps loop | NOT STARTED |
+| 3 | Networking stack (MetalLB, ingress, certs, DNS) | NOT STARTED |
+| 4 | Storage + first app (AdGuard) | NOT STARTED |
+| 5 | Monitoring (Prometheus, Grafana, Loki) | NOT STARTED |
+| 6 | Security hardening (network policies, Kyverno, Trivy) | NOT STARTED |
+| 7 | Reliability + operations (Velero, resource quotas, Reloader) | NOT STARTED |
+| 8 | Apps + remote access (cloudflared, Home Assistant) | NOT STARTED |
+
+## Hardware
+
+| Component | Spec |
+|-----------|------|
+| CPU | Intel Core i3-10100 (4c/8t) |
+| RAM | 64 GB DDR4-3200 |
+| Storage | 4 TB NVMe (Crucial P3) |
+| Case | Fractal Design Ridge Mini ITX |
+| PSU | Silverstone SX500-G 500W SFX |
+| Motherboard | MSI MPG B560I Gaming Edge WiFi |
+
+## Tech Stack
+
+### Deployed
+- **Workstation:** talosctl, kubectl, flux, sops, age, task, pre-commit, kubeconform, ansible, yamllint
+- **CI/CD:** GitHub Actions (lint workflow), Renovate (dependency updates)
+- **Secrets:** SOPS + age encryption
+
+### Planned
+- **OS:** Talos Linux
+- **GitOps:** Flux CD
+- **Ingress:** ingress-nginx, MetalLB, ExternalDNS
+- **Security:** Kyverno, default-deny NetworkPolicies, cert-manager, Trivy Operator
+- **Storage:** Longhorn
+- **Monitoring:** Prometheus, Grafana, Loki, Alertmanager
+- **Backup:** Velero
+- **Apps:** AdGuard Home, Home Assistant
+- **Remote Access:** cloudflared (Cloudflare Tunnel)
+- **Utilities:** Reloader
+
+## Next Steps
+
+Phase 1 begins with Talos Linux installation on the bare metal machine:
+
+1. Generate Talos machine configuration with `talosctl gen config`
+2. Boot the machine from the Talos ISO and apply the config
+3. Bootstrap the Kubernetes cluster with `talosctl bootstrap`
+4. Verify cluster health with `kubectl get nodes` and `kubectl get pods -A`
