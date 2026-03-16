@@ -1,6 +1,4 @@
 creation_rules:
   - path_regex: kubernetes/.*\.sops\.yaml$
     encrypted_regex: ^(data|stringData)$
-    age: >-
-      # REPLACE with your age public key (age1...)
-      age1xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    age: "age1yz3g8q5t7s7s49mnv94v7jxhnp3ezjy9e9qlek2z0xxjfryw6vls8npy9e"  # pragma: allowlist secret
