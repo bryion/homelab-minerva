@@ -1,4 +1,4 @@
-# homelab-minerva-minerva
+# homelab-minerva
 
 [![Validate](https://github.com/<user>/homelab-minerva/actions/workflows/lint.yml/badge.svg)](https://github.com/<user>/homelab-minerva/actions/workflows/lint.yml)
 ![Last Commit](https://img.shields.io/github/last-commit/<user>/homelab-minerva)
