@@ -1,10 +1,10 @@
 version: "3"
 
 vars:
-  CLUSTER_NAME: homelab
+  CLUSTER_NAME: homelab-minerva
   TALOS_NODE: 192.168.1.X  # Replace with node IP
   GITHUB_OWNER: ""          # Replace with GitHub org/user
-  GITHUB_REPO: homelab
+  GITHUB_REPO: homelab-minerva
 
 tasks:
   # --- Talos ---

@@ -1,8 +1,8 @@
-# homelab
+# homelab-minerva-minerva
 
-[![Validate](https://github.com/<user>/homelab/actions/workflows/lint.yml/badge.svg)](https://github.com/<user>/homelab/actions/workflows/lint.yml)
-![Last Commit](https://img.shields.io/github/last-commit/<user>/homelab)
-![License](https://img.shields.io/github/license/<user>/homelab)
+[![Validate](https://github.com/<user>/homelab-minerva/actions/workflows/lint.yml/badge.svg)](https://github.com/<user>/homelab-minerva/actions/workflows/lint.yml)
+![Last Commit](https://img.shields.io/github/last-commit/<user>/homelab-minerva)
+![License](https://img.shields.io/github/license/<user>/homelab-minerva)
 
 > GitOps-managed single-node Kubernetes cluster on bare metal, powered by Talos Linux and Flux CD.
 
@@ -83,7 +83,7 @@ talosctl kubectl flux sops age task ansible pre-commit kubeconform velero
 ## Repo Structure
 
 ```
-homelab/
+homelab-minerva/
 ├── .github/              # CI workflows, PR template, Renovate config
 ├── docs/                 # Architecture docs and ADRs
 ├── ansible/              # Inventory and bootstrap playbooks

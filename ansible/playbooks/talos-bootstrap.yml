@@ -5,7 +5,7 @@
   vars:
     talos_version: "v1.9.0"
     kubernetes_version: "v1.32.0"
-    cluster_name: homelab
+    cluster_name: homelab-minerva
     cluster_endpoint: "https://{{ talos_endpoint }}:6443"
 
   tasks:
