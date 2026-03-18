@@ -4,7 +4,7 @@
 ![Last Commit](https://img.shields.io/github/last-commit/<user>/homelab-minerva)
 ![License](https://img.shields.io/github/license/<user>/homelab-minerva)
 
-> GitOps-managed single-node Kubernetes cluster on bare metal, powered by Talos Linux and Flux CD.
+> GitOps-managed single-node Kubernetes cluster on bare metal, powered by Ubuntu 24.04, k3s, and Flux CD.
 
 ## Architecture
 
@@ -15,7 +15,7 @@ graph LR
         CF[Cloudflare]
     end
 
-    subgraph Cluster["Kubernetes (Talos Linux)"]
+    subgraph Cluster["Kubernetes (Ubuntu 24.04 / k3s)"]
         FLUX[Flux CD] -->|reconcile| INFRA[Infrastructure]
         FLUX -->|reconcile| APPS[Apps]
 
@@ -54,7 +54,7 @@ graph LR
 
 | Layer | Tools |
 |-------|-------|
-| OS | Talos Linux |
+| OS | Ubuntu 24.04 LTS + k3s |
 | GitOps | Flux CD, Renovate |
 | Networking | ingress-nginx, MetalLB, ExternalDNS, Cloudflare Tunnels |
 | Security | SOPS/age, cert-manager, Kyverno, NetworkPolicies, Trivy Operator |
@@ -64,19 +64,19 @@ graph LR
 | DNS | AdGuard Home |
 | Automation | Home Assistant |
 | Operations | Reloader, Flux notifications |
-| IaC | Ansible (bootstrap), Terraform (Cloudflare) |
+| IaC | Ansible (provisioning + maintenance), Terraform (Cloudflare) |
 
 ## Prerequisites
 
 ```
-talosctl kubectl flux sops age task ansible pre-commit kubeconform velero
+kubectl flux sops age task ansible pre-commit kubeconform velero
 ```
 
 ## Quick Start
 
 1. **Generate an age key** — `task sops:age-keygen` and add the public key to `.sops.yaml`
 2. **Configure SOPS** — set `SOPS_AGE_KEY_FILE` to point to your private key
-3. **Bootstrap Talos** — update `ansible/inventory/hosts.yml` with your node IP and run `ansible-playbook ansible/playbooks/talos-bootstrap.yml`
+3. **Bootstrap node** — update `ansible/inventory/hosts.yml` with your node IP and run `task node:bootstrap`
 4. **Bootstrap Flux** — fill in `GITHUB_OWNER` in `Taskfile.yml` and run `task flux:bootstrap`
 5. **Verify** — `flux get all` and `kubectl get nodes`
 
@@ -86,8 +86,7 @@ talosctl kubectl flux sops age task ansible pre-commit kubeconform velero
 homelab-minerva/
 ├── .github/              # CI workflows, PR template, Renovate config
 ├── docs/                 # Architecture docs and ADRs
-├── ansible/              # Inventory and bootstrap playbooks
-├── talos/                # Machine configs and patches
+├── ansible/              # Inventory and provisioning playbooks
 ├── kubernetes/
 │   ├── flux-system/      # Flux bootstrap (managed by Flux)
 │   ├── infrastructure/
@@ -109,9 +108,3 @@ homelab-minerva/
 ## License
 
 [MIT](LICENSE)
-test
-test
-test
-clean line
-clean line
-clean line

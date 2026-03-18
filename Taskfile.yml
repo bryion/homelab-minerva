@@ -2,30 +2,40 @@ version: "3"
 
 vars:
   CLUSTER_NAME: homelab-minerva
-  TALOS_NODE: 192.168.1.X  # Replace with node IP
+  NODE_IP: 192.168.1.X  # Replace with node IP
   GITHUB_OWNER: ""          # Replace with GitHub org/user
   GITHUB_REPO: homelab-minerva
 
 tasks:
-  # --- Talos ---
-  talos:gen:
-    desc: Generate Talos machine configs
+  # --- Node ---
+  node:bootstrap:
+    desc: Bootstrap Ubuntu 24.04 + k3s on the bare metal node
     cmds:
-      - >
-        talosctl gen config {{.CLUSTER_NAME}}
-        https://{{.TALOS_NODE}}:6443
-        --output-dir talos/clusterconfig
-        --with-docs=false
-        --with-examples=false
+      - ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/ubuntu-bootstrap.yml
 
-  talos:apply:
-    desc: Apply Talos config to the node
+  node:upgrade:
+    desc: Run apt upgrade and reboot if required
     cmds:
       - >
-        talosctl apply-config
-        --talosconfig talos/clusterconfig/talosconfig
-        --nodes {{.TALOS_NODE}}
-        --file talos/clusterconfig/controlplane.yaml
+        ansible -i ansible/inventory/hosts.yml k3s -b -m apt
+        -a "upgrade=dist update_cache=yes"
+      - >
+        ansible -i ansible/inventory/hosts.yml k3s -b -m reboot
+        -a "reboot_timeout=300"
+
+  # --- k3s ---
+  k3s:upgrade:
+    desc: Upgrade k3s to INSTALL_K3S_VERSION (e.g. v1.32.0+k3s1)
+    cmds:
+      - ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/k3s-upgrade.yml
+
+  k3s:kubeconfig:
+    desc: Fetch kubeconfig from node and write to ./kubeconfig
+    cmds:
+      - >
+        ansible -i ansible/inventory/hosts.yml k3s -b
+        -m fetch -a "src=/etc/rancher/k3s/k3s.yaml dest=kubeconfig flat=yes"
+      - sed -i '' 's|https://127.0.0.1:6443|https://{{.NODE_IP}}:6443|' kubeconfig
 
   # --- Flux ---
   flux:bootstrap:

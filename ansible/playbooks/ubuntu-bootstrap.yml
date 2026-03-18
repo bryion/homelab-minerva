@@ -1,0 +1,191 @@
+---
+# Ubuntu 24.04 LTS + k3s bootstrap playbook.
+# Run with: task node:bootstrap
+
+# Play 1: OS hardening
+- name: Harden Ubuntu 24.04
+  hosts: k3s
+  gather_facts: true
+  tasks:
+    - name: Install prerequisites
+      ansible.builtin.apt:
+        name:
+          - open-iscsi
+          - nfs-common
+          - cryptsetup
+          - curl
+        state: present
+        update_cache: true
+
+    - name: Disable password authentication
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: "^#?PasswordAuthentication"
+        line: "PasswordAuthentication no"
+      notify: Restart sshd
+
+    - name: Disable root login
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: "^#?PermitRootLogin"
+        line: "PermitRootLogin no"
+      notify: Restart sshd
+
+    - name: Install UFW
+      ansible.builtin.apt:
+        name: ufw
+        state: present
+
+    - name: Allow SSH
+      community.general.ufw:
+        rule: allow
+        port: "22"
+        proto: tcp
+
+    - name: Allow k3s API server
+      community.general.ufw:
+        rule: allow
+        port: "6443"
+        proto: tcp
+
+    - name: Allow kubelet
+      community.general.ufw:
+        rule: allow
+        port: "10250"
+        proto: tcp
+
+    - name: Allow VXLAN (Flannel/Calico overlay)
+      community.general.ufw:
+        rule: allow
+        port: "8472"
+        proto: udp
+
+    - name: Allow NodePort range
+      community.general.ufw:
+        rule: allow
+        port: "30000:32767"
+        proto: tcp
+
+    - name: Enable UFW
+      community.general.ufw:
+        state: enabled
+        policy: deny
+
+    - name: Install unattended-upgrades
+      ansible.builtin.apt:
+        name: unattended-upgrades
+        state: present
+
+    - name: Enable unattended-upgrades
+      ansible.builtin.copy:
+        dest: /etc/apt/apt.conf.d/20auto-upgrades
+        content: |
+          APT::Periodic::Update-Package-Lists "1";
+          APT::Periodic::Unattended-Upgrade "1";
+        mode: "0644"
+
+    - name: Set required sysctl values
+      ansible.posix.sysctl:
+        name: "{{ item.key }}"
+        value: "{{ item.value }}"
+        state: present
+        sysctl_set: true
+        reload: true
+      loop:
+        - {key: net.bridge.bridge-nf-call-iptables, value: "1"}
+        - {key: net.ipv4.ip_forward, value: "1"}
+        - {key: fs.inotify.max_user_watches, value: "524288"}
+        - {key: fs.inotify.max_user_instances, value: "512"}
+
+    - name: Load required kernel modules
+      community.general.modprobe:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - br_netfilter
+        - overlay
+        - iscsi_tcp
+
+    - name: Persist kernel modules on boot
+      ansible.builtin.copy:
+        dest: /etc/modules-load.d/k3s.conf
+        content: |
+          br_netfilter
+          overlay
+          iscsi_tcp
+        mode: "0644"
+
+    - name: Disable swap
+      ansible.builtin.command: swapoff -a
+      changed_when: false
+
+    - name: Remove swap from fstab
+      ansible.builtin.replace:
+        path: /etc/fstab
+        regexp: '^([^#].*\s+swap\s+.*)$'
+        replace: '# \1'
+
+  handlers:
+    - name: Restart sshd
+      ansible.builtin.service:
+        name: ssh
+        state: restarted
+
+# Play 2: Install k3s
+- name: Install k3s
+  hosts: k3s
+  gather_facts: true
+  tasks:
+    - name: Download k3s install script
+      ansible.builtin.get_url:
+        url: https://get.k3s.io
+        dest: /tmp/k3s-install.sh
+        mode: "0755"
+
+    - name: Install k3s
+      ansible.builtin.command: /tmp/k3s-install.sh
+      environment:
+        INSTALL_K3S_EXEC: >-
+          --disable traefik
+          --disable servicelb
+          --flannel-backend=none
+          --disable-network-policy
+          --write-kubeconfig-mode 644
+          --tls-san {{ ansible_host }}
+      args:
+        creates: /usr/local/bin/k3s
+
+    - name: Wait for k3s service to be active
+      ansible.builtin.service_facts:
+
+    - name: Ensure k3s is started and enabled
+      ansible.builtin.service:
+        name: k3s
+        state: started
+        enabled: true
+
+    - name: Wait for node to be Ready
+      ansible.builtin.command: k3s kubectl get nodes
+      register: node_status
+      until: "'Ready' in node_status.stdout"
+      retries: 20
+      delay: 10
+      changed_when: false
+
+# Play 3: Fetch kubeconfig to localhost
+- name: Fetch kubeconfig
+  hosts: k3s
+  gather_facts: false
+  tasks:
+    - name: Fetch k3s kubeconfig
+      ansible.builtin.fetch:
+        src: /etc/rancher/k3s/k3s.yaml
+        dest: "{{ playbook_dir }}/../../kubeconfig"
+        flat: true
+
+    - name: Rewrite server URL to node IP
+      ansible.builtin.replace:
+        path: "{{ playbook_dir }}/../../kubeconfig"
+        regexp: 'https://127\.0\.0\.1:6443'
+        replace: "https://{{ ansible_host }}:6443"
+      delegate_to: localhost
