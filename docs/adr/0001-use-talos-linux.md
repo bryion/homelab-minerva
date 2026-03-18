@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Superseded by [ADR-0006](0006-ubuntu-2404-with-k3s.md)
 
 ## Date
 

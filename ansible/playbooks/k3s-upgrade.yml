@@ -1,0 +1,40 @@
+---
+# Upgrade k3s to a specific version.
+# Usage: INSTALL_K3S_VERSION=v1.32.0+k3s1 task k3s:upgrade
+
+- name: Upgrade k3s
+  hosts: k3s
+  gather_facts: true
+  tasks:
+    - name: Download k3s install script
+      ansible.builtin.get_url:
+        url: https://get.k3s.io
+        dest: /tmp/k3s-install.sh
+        mode: "0755"
+        force: true
+
+    - name: Run k3s upgrade
+      ansible.builtin.command: /tmp/k3s-install.sh
+      environment:
+        INSTALL_K3S_VERSION: "{{ lookup('env', 'INSTALL_K3S_VERSION') }}"
+        INSTALL_K3S_EXEC: >-
+          --disable traefik
+          --disable servicelb
+          --flannel-backend=none
+          --disable-network-policy
+          --write-kubeconfig-mode 644
+          --tls-san {{ ansible_host }}
+      changed_when: true
+
+    - name: Wait for k3s service to restart
+      ansible.builtin.service:
+        name: k3s
+        state: restarted
+
+    - name: Wait for node to be Ready
+      ansible.builtin.command: k3s kubectl get nodes
+      register: node_status
+      until: "'Ready' in node_status.stdout"
+      retries: 20
+      delay: 10
+      changed_when: false

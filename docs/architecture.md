@@ -9,7 +9,7 @@ graph TB
         Git[GitHub Repository]
     end
 
-    subgraph Cluster["Kubernetes Cluster (Talos Linux)"]
+    subgraph Cluster["Kubernetes Cluster (Ubuntu 24.04 / k3s)"]
         subgraph Ingress
             CFD[cloudflared]
             NGINX[ingress-nginx]
