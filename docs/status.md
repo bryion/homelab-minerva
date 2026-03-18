@@ -17,7 +17,7 @@
 
 ## Architecture Overview
 
-Single-node Kubernetes cluster running Ubuntu 24.04 LTS with k3s on bare metal, managed via Flux CD GitOps. External access is provided through Cloudflare tunnels (cloudflared) without exposing ports. Security follows a defense-in-depth model with default-deny network policies, Kyverno admission policies, SOPS-encrypted secrets, and Trivy image scanning. Monitoring uses the Prometheus/Grafana/Loki stack, with Velero handling disaster recovery backups.
+Single-node Kubernetes cluster running Ubuntu 24.04 LTS with k3s on bare metal, managed via Flux CD GitOps. External access is provided through Cloudflare tunnels (cloudflared) without exposing ports. Security follows a defense-in-depth model with default-deny network policies, SOPS-encrypted secrets, and cert-manager TLS. Monitoring uses the Prometheus/Grafana stack, with Velero handling disaster recovery backups.
 
 ## Phase Plan
 
@@ -28,8 +28,8 @@ Single-node Kubernetes cluster running Ubuntu 24.04 LTS with k3s on bare metal, 
 | 2 | Flux bootstrap + GitOps loop | NOT STARTED |
 | 3 | Networking stack (MetalLB, ingress, certs, DNS) | NOT STARTED |
 | 4 | Storage + first app (AdGuard) | NOT STARTED |
-| 5 | Monitoring (Prometheus, Grafana, Loki) | NOT STARTED |
-| 6 | Security hardening (network policies, Kyverno, Trivy) | NOT STARTED |
+| 5 | Monitoring (Prometheus, Grafana) | NOT STARTED |
+| 6 | Security hardening (default-deny NetworkPolicies) | NOT STARTED |
 | 7 | Reliability + operations (Velero, resource quotas, Reloader) | NOT STARTED |
 | 8 | Apps + remote access (cloudflared, Home Assistant) | NOT STARTED |
 
@@ -55,9 +55,9 @@ Single-node Kubernetes cluster running Ubuntu 24.04 LTS with k3s on bare metal, 
 - **OS:** Ubuntu 24.04 LTS + k3s
 - **GitOps:** Flux CD
 - **Ingress:** ingress-nginx, MetalLB, ExternalDNS
-- **Security:** Kyverno, default-deny NetworkPolicies, cert-manager, Trivy Operator
-- **Storage:** Longhorn
-- **Monitoring:** Prometheus, Grafana, Loki, Alertmanager
+- **Security:** default-deny NetworkPolicies, cert-manager
+- **Storage:** local-path-provisioner (k3s built-in)
+- **Monitoring:** Prometheus, Grafana, Alertmanager
 - **Backup:** Velero
 - **Apps:** AdGuard Home, Home Assistant
 - **Remote Access:** cloudflared (Cloudflare Tunnel)

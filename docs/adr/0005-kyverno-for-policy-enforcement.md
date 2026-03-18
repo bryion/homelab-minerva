@@ -2,7 +2,12 @@
 
 ## Status
 
-Accepted
+Superseded
+
+> Superseded 2026-03-18. In a single-author homelab, Kyverno enforces policies that the sole
+> operator already follows manually. Pre-commit YAML linting provides equivalent shift-left
+> safety without admission webhook complexity. May be revisited if the cluster becomes
+> multi-user.
 
 ## Date
 

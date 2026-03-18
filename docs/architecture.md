@@ -17,21 +17,18 @@ graph TB
         end
 
         subgraph Security
-            KYV[Kyverno]
             NP[Network Policies]
             CM[cert-manager]
-            TRIVY[Trivy Operator]
         end
 
         subgraph Infrastructure
             EDNS[ExternalDNS]
-            LH[Longhorn]
+            LPP[local-path-provisioner]
             RL[Reloader]
         end
 
         subgraph Monitoring
             PROM[Prometheus/Grafana]
-            LOKI[Loki]
             AM[Alertmanager]
         end
 
@@ -59,9 +56,7 @@ graph TB
     Git -->|sync| FLUX
     FLUX -->|reconcile| Cluster
     PROM -->|scrape| Cluster
-    KYV -->|enforce| Cluster
     NP -->|restrict| Cluster
-    TRIVY -->|scan| Cluster
     VEL -->|backup| EXT
 ```
 
@@ -71,11 +66,11 @@ graph TB
 
 **Ingress** — ingress-nginx handles HTTP routing. MetalLB assigns LoadBalancer IPs on the local network. ExternalDNS synchronizes Ingress hostnames to Cloudflare DNS records.
 
-**Security** — Kyverno enforces admission policies (no root, required labels, image allowlists). Network policies default to deny-all with explicit per-service allow rules. cert-manager provisions TLS certificates via Let's Encrypt. Trivy Operator continuously scans container images for vulnerabilities.
+**Security** — Network policies default to deny-all with explicit per-service allow rules enforced by Flannel's built-in NetworkPolicy controller. cert-manager provisions TLS certificates via Let's Encrypt. All secrets in Git are encrypted with SOPS + age.
 
-**Infrastructure** — Longhorn provides replicated persistent storage. Reloader watches ConfigMaps and Secrets to trigger rolling restarts when configuration changes.
+**Infrastructure** — local-path-provisioner (k3s built-in) provides node-local persistent volumes. Reloader watches ConfigMaps and Secrets to trigger rolling restarts.
 
-**Monitoring** — Prometheus scrapes metrics, Grafana visualizes them, Loki aggregates logs, Alertmanager routes alerts.
+**Monitoring** — Prometheus scrapes metrics, Grafana visualizes them, Alertmanager routes alerts.
 
 **Apps** — AdGuard Home for DNS-level ad blocking, Home Assistant for home automation, with room to grow.
 
@@ -85,8 +80,8 @@ DNS resolution works in two paths. For remote access, Cloudflare resolves the pu
 
 ## Security Model
 
-Every namespace starts with a default-deny NetworkPolicy. Services must explicitly declare what ingress and egress they need. Kyverno ClusterPolicies enforce: no privileged containers, no root users, required resource limits, image registries restricted to ghcr.io/docker.io/quay.io, and required `app.kubernetes.io` labels. All secrets in Git are encrypted with SOPS using age keys. TLS is enforced on all ingress via cert-manager with Let's Encrypt.
+Every namespace starts with a default-deny NetworkPolicy. Services must explicitly declare what ingress and egress they need. All secrets in Git are encrypted with SOPS using age keys. TLS is enforced on all ingress via cert-manager with Let's Encrypt.
 
 ## Backup Strategy
 
-Velero runs on a daily schedule backing up all namespaces and cluster-scoped resources. Persistent volume data is captured via Longhorn snapshots. Recovery procedure: install Velero on a fresh cluster, point it at the backup target, run `velero restore create --from-backup <latest>`, then verify workloads come up and PVCs rebind to restored Longhorn volumes.
+Velero runs on a daily schedule using file-system backup (kopia) to capture PVC data from local-path-provisioner volumes. Recovery: install Velero on fresh cluster, point at backup target, run `velero restore create --from-backup <latest>`.

@@ -54,7 +54,7 @@
         port: "10250"
         proto: tcp
 
-    - name: Allow VXLAN (Flannel/Calico overlay)
+    - name: Allow VXLAN (Flannel VXLAN overlay)
       community.general.ufw:
         rule: allow
         port: "8472"
@@ -148,8 +148,6 @@
         INSTALL_K3S_EXEC: >-
           --disable traefik
           --disable servicelb
-          --flannel-backend=none
-          --disable-network-policy
           --write-kubeconfig-mode 644
           --tls-san {{ ansible_host }}
       args:

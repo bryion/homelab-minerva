@@ -20,7 +20,6 @@ graph LR
         FLUX -->|reconcile| APPS[Apps]
 
         subgraph Security
-            KYV[Kyverno]
             NP[Network Policies]
         end
 
@@ -57,10 +56,10 @@ graph LR
 | OS | Ubuntu 24.04 LTS + k3s |
 | GitOps | Flux CD, Renovate |
 | Networking | ingress-nginx, MetalLB, ExternalDNS, Cloudflare Tunnels |
-| Security | SOPS/age, cert-manager, Kyverno, NetworkPolicies, Trivy Operator |
-| Storage | Longhorn |
+| Security | SOPS/age, cert-manager, NetworkPolicies |
+| Storage | local-path-provisioner (k3s built-in) |
 | Backup | Velero |
-| Monitoring | Prometheus, Grafana, Loki, Alertmanager |
+| Monitoring | Prometheus, Grafana, Alertmanager |
 | DNS | AdGuard Home |
 | Automation | Home Assistant |
 | Operations | Reloader, Flux notifications |
@@ -90,12 +89,11 @@ homelab-minerva/
 ├── kubernetes/
 │   ├── flux-system/      # Flux bootstrap (managed by Flux)
 │   ├── infrastructure/
-│   │   ├── controllers/  # cert-manager, ingress-nginx, external-dns, metallb, kyverno, reloader
+│   │   ├── controllers/  # cert-manager, ingress-nginx, external-dns, metallb, reloader
 │   │   ├── configs/      # cert-manager issuers, metallb pools, network policies
-│   │   ├── security/     # Kyverno policies, Trivy Operator
-│   │   ├── storage/      # Longhorn
+│   │   ├── storage/      # local-path-provisioner config
 │   │   └── backup/       # Velero
-│   ├── monitoring/       # kube-prometheus-stack, Loki
+│   ├── monitoring/       # kube-prometheus-stack
 │   └── apps/             # adguard, home-assistant, cloudflared
 └── terraform/            # Cloudflare DNS and tunnel config
 ```
