@@ -33,7 +33,7 @@ k3s is the de facto single-node homelab Kubernetes distribution:
 
 Replace Talos Linux with Ubuntu 24.04 LTS. Replace the Talos cluster with k3s. Use Ansible to provision the OS, harden it, and install k3s. All layers above the OS (Flux CD, Helm releases, Kubernetes manifests, SOPS, Terraform) are unchanged.
 
-**CNI note:** k3s ships with Flannel, which does not enforce NetworkPolicies. Because ADR-0004 mandates default-deny NetworkPolicies, k3s is installed with `--flannel-backend=none --disable-network-policy` so that a NetworkPolicy-aware CNI (Calico) can be deployed via Flux in the infrastructure layer.
+**CNI note:** k3s ships Flannel with a built-in NetworkPolicy controller (`--network-policy` is enabled by default). This satisfies ADR-0004's default-deny requirement using the standard `networking.k8s.io/v1` NetworkPolicy API, with no external CNI required.
 
 ## Consequences
 
@@ -41,5 +41,4 @@ Replace Talos Linux with Ubuntu 24.04 LTS. Replace the Talos cluster with k3s. U
 - OS is mutable — drift is possible, mitigated by Ansible idempotency and periodic re-runs.
 - OS upgrades are handled by `unattended-upgrades` for security patches and `task node:upgrade` for full upgrades.
 - Ansible becomes the primary node management tool (not just bootstrap).
-- Calico must be deployed as the first infrastructure component before any NetworkPolicy-dependent workloads start.
 - `talosctl` is removed from the prerequisites list.
