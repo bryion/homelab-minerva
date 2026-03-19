@@ -43,7 +43,6 @@ graph TB
     CM -->|TLS certs| NGINX
     Git -->|sync| FLUX
     FLUX -->|reconcile| Cluster
-    PROM -->|scrape| Cluster
     TS -->|subnet route| Apps
 ```
 
