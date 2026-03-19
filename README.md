@@ -1,8 +1,8 @@
 # homelab-minerva
 
-[![Validate](https://github.com/<user>/homelab-minerva/actions/workflows/lint.yml/badge.svg)](https://github.com/<user>/homelab-minerva/actions/workflows/lint.yml)
-![Last Commit](https://img.shields.io/github/last-commit/<user>/homelab-minerva)
-![License](https://img.shields.io/github/license/<user>/homelab-minerva)
+[![Validate](https://github.com/bryion/homelab-minerva/actions/workflows/lint.yml/badge.svg)](https://github.com/bryion/homelab-minerva/actions/workflows/lint.yml)
+![Last Commit](https://img.shields.io/github/last-commit/bryion/homelab-minerva)
+![License](https://img.shields.io/github/license/bryion/homelab-minerva)
 
 > GitOps-managed single-node Kubernetes cluster on bare metal, powered by Ubuntu 24.04, k3s, and Flux CD.
 
@@ -12,31 +12,23 @@
 graph LR
     subgraph External
         GH[GitHub Repo]
-        CF[Cloudflare]
+        CF[Cloudflare DNS]
     end
 
     subgraph Cluster["Kubernetes (Ubuntu 24.04 / k3s)"]
         FLUX[Flux CD] -->|reconcile| INFRA[Infrastructure]
         FLUX -->|reconcile| APPS[Apps]
 
-        subgraph Security
-            NP[Network Policies]
-        end
-
         subgraph Services
             NGINX[ingress-nginx]
-            ADG[AdGuard]
-            HA[Home Assistant]
+            ADG[AdGuard Home]
+            TS[Tailscale]
         end
-    end
-
-    subgraph Backup
-        VEL[Velero] -->|snapshots| EXT[External Target]
     end
 
     GH -->|sync| FLUX
-    CF -->|tunnel| NGINX
-    Security -.->|enforce| Cluster
+    CF -->|A records| NGINX
+    TS -->|subnet route| APPS
 ```
 
 ## Hardware
@@ -55,20 +47,20 @@ graph LR
 |-------|-------|
 | OS | Ubuntu 24.04 LTS + k3s |
 | GitOps | Flux CD, Renovate |
-| Networking | ingress-nginx, MetalLB, ExternalDNS, Cloudflare Tunnels |
-| Security | SOPS/age, cert-manager, NetworkPolicies |
+| Ingress | ingress-nginx (hostPort 80/443) |
+| TLS | cert-manager (Let's Encrypt via Cloudflare DNS-01) |
 | Storage | local-path-provisioner (k3s built-in) |
-| Backup | Velero |
 | Monitoring | Prometheus, Grafana, Alertmanager |
-| DNS | AdGuard Home |
-| Automation | Home Assistant |
-| Operations | Reloader, Flux notifications |
-| IaC | Ansible (provisioning + maintenance), Terraform (Cloudflare) |
+| DNS | AdGuard Home, Cloudflare (A records via Terraform) |
+| Remote Access | Tailscale (subnet router) |
+| Operations | Reloader |
+| Secrets | SOPS + age |
+| IaC | Ansible (provisioning), Terraform (Cloudflare DNS) |
 
 ## Prerequisites
 
 ```
-kubectl flux sops age task ansible pre-commit kubeconform velero
+kubectl flux sops age task ansible pre-commit kubeconform yamllint
 ```
 
 ## Quick Start
@@ -89,13 +81,11 @@ homelab-minerva/
 ├── kubernetes/
 │   ├── flux-system/      # Flux bootstrap (managed by Flux)
 │   ├── infrastructure/
-│   │   ├── controllers/  # cert-manager, ingress-nginx, external-dns, metallb, reloader
-│   │   ├── configs/      # cert-manager issuers, metallb pools, network policies
-│   │   ├── storage/      # local-path-provisioner config
-│   │   └── backup/       # Velero
+│   │   ├── controllers/  # ingress-nginx, cert-manager, reloader
+│   │   └── configs/      # cert-manager issuers
 │   ├── monitoring/       # kube-prometheus-stack
-│   └── apps/             # adguard, home-assistant, cloudflared
-└── terraform/            # Cloudflare DNS and tunnel config
+│   └── apps/             # adguard, tailscale
+└── terraform/            # Cloudflare DNS A records
 ```
 
 ## Documentation
