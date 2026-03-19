@@ -78,7 +78,7 @@ tasks:
   validate:yaml:
     desc: Lint all YAML files
     cmds:
-      - yamllint -c .yamllint.yml . || yamllint .
+      - yamllint -c .yamllint.yml .
 
   validate:k8s:
     desc: Validate Kubernetes manifests
@@ -88,15 +88,3 @@ tasks:
         -ignore-missing-schemas
         -skip kubernetes/flux-system/
         kubernetes/
-
-  # --- Velero ---
-  velero:backup:
-    desc: Trigger a manual Velero backup
-    cmds:
-      - velero backup create manual-{{now | date "20060102-150405"}} --wait
-
-  velero:restore:
-    desc: List available Velero restores
-    cmds:
-      - velero backup get
-      - velero restore get
